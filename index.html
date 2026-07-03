@@ -12,6 +12,9 @@
   <header class="bg-gradient-to-r from-teal-400 to-blue-500 p-6 shadow-md text-center rounded-b-3xl">
     <h1 class="text-2xl md:text-3xl font-extrabold text-white drop-shadow-sm">🎒 ABSENSI MURID KELAS 4</h1>
     <p class="text-sm md:text-base text-white opacity-90 font-medium mt-1">SDN RANUKLINDUNGAN I</p>
+    <div class="inline-block mt-2 px-4 py-1 bg-white/20 backdrop-blur-sm rounded-full text-white text-xs font-bold tracking-wide border border-white/20">
+      📅 Tahun Ajaran: <span id="lblTahunAktifSiswa">⏳ Memuat...</span>
+    </div>
   </header>
 
   <main class="max-w-md mx-auto mt-6 px-4">
@@ -21,13 +24,12 @@
         <label for="inputAbsen" class="block text-base font-bold text-teal-800 mb-2">🔢 Masukkan Nomor Absen Kamu:</label>
         <input type="number" id="inputAbsen" 
                class="w-full px-4 py-3 rounded-2xl border-3 border-teal-300 font-extrabold text-2xl text-center focus:outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-200 transition-all placeholder-slate-300" 
-               placeholder="Contoh: 12" min="1">
-      </div>
+               placeholder="Contoh: 12" min="1" disabled> </div>
 
-      <div id="infoMurid" class="hidden bg-gradient-to-br from-slate-50 to-teal-50/30 p-4 rounded-2xl border-2 border-dashed border-teal-300 mb-5 fade-in">
-        <p class="text-xs text-teal-600 font-bold uppercase tracking-wider mb-1">Identitas Siswa Ditemukan:</p>
-        <h3 id="namaSiswa" class="text-xl font-black text-blue-600">-</h3>
-        <p id="alamatSiswa" class="text-sm text-slate-600 mt-1 font-medium">-</p>
+      <div id="infoMurid" class="hidden p-4 rounded-2xl border-2 border-dashed mb-5 transition-all">
+        <p id="infoMuridLabel" class="text-xs font-bold uppercase tracking-wider mb-1">Identitas Siswa:</p>
+        <h3 id="namaSiswa" class="text-xl font-black">-</h3>
+        <p id="alamatSiswa" class="text-sm mt-1 font-medium">-</p>
       </div>
 
       <div class="mb-6">
