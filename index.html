@@ -5,11 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Absensi Kelas 4 - SDN Ranuklindungan I</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <style>
-    /* Animasi sederhana untuk pengalaman UI yang menyenangkan */
-    .fade-in { animation: fadeIn 0.4s ease-out forwards; }
-    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-  </style>
+  <link rel="stylesheet" href="css/style.css">
 </head>
 <body class="bg-amber-50 min-h-screen text-slate-800 pb-12 font-sans">
 
@@ -38,10 +34,10 @@
         <label class="block text-base font-bold text-teal-800 mb-2">📝 Pilih Keterangan:</label>
         <div class="grid grid-cols-2 gap-4">
           <label class="flex items-center justify-center p-4 border-2 border-slate-200 rounded-2xl cursor-pointer hover:bg-amber-50 font-bold text-lg bg-white shadow-sm transition-all select-none">
-            <input type="radio" name="status" value="Sakit" class="mr-3 w-5 h-5 accent-teal-600"> 🤒 Sakit
+            <input type="radio" name="status" value="Sakit" class="mr-3 w-5 h-5 accent-teal-600"> <span>🤒 Sakit</span>
           </label>
           <label class="flex items-center justify-center p-4 border-2 border-slate-200 rounded-2xl cursor-pointer hover:bg-amber-50 font-bold text-lg bg-white shadow-sm transition-all select-none">
-            <input type="radio" name="status" value="Izin" class="mr-3 w-5 h-5 accent-teal-600"> ✉️ Izin
+            <input type="radio" name="status" value="Izin" class="mr-3 w-5 h-5 accent-teal-600"> <span>✉️ Izin</span>
           </label>
         </div>
       </div>
@@ -72,161 +68,7 @@
     </div>
   </main>
 
-  <script>
-    // Konfigurasi API terintegrasi langsung dengan Apps Script Pak Sugeng
-    const API_URL = "https://script.google.com/macros/s/AKfycbyYYcK4JgzB7fhwqxyW2a1FkMdhE8726iqCeHsxxSJcWyulN5E8gZo59YQGuut-jX6gIA/exec";
-    const TAHUN_AJARAN = "2025/2026"; // Sesuaikan jika tahun ajaran berubah
-    
-    // Inisialisasi Elemen DOM
-    const video = document.getElementById('video');
-    const canvas = document.getElementById('canvas');
-    const btnCamera = document.getElementById('btnCamera');
-    const placeholderImg = document.getElementById('placeholderImg');
-    const btnKirim = document.getElementById('btnKirim');
-    const inputAbsen = document.getElementById('inputAbsen');
-    const infoMurid = document.getElementById('infoMurid');
-    const namaSiswa = document.getElementById('namaSiswa');
-    const alamatSiswa = document.getElementById('alamatSiswa');
-    
-    let isStreamActive = false;
-    let base64Image = null;
-    let dataSiswa = null;
-    let debounceTimer;
-
-    // 1. Logika Cari Murid Otomatis (Debounce 500ms agar hemat kuota request)
-    inputAbsen.addEventListener('input', function() {
-      clearTimeout(debounceTimer);
-      const val = this.value.trim();
-      
-      if(!val) {
-        infoMurid.classList.add('hidden');
-        dataSiswa = null;
-        disableKirim();
-        return;
-      }
-
-      debounceTimer = setTimeout(() => {
-        namaSiswa.innerText = "⏳ Mencari nama...";
-        alamatSiswa.innerText = "Mohon tunggu sebentar...";
-        infoMurid.classList.remove('hidden');
-
-        fetch(API_URL, {
-          method: 'POST',
-          body: JSON.stringify({ action: "getStudent", no_absen: val, tahun_ajaran: TAHUN_AJARAN })
-        })
-        .then(res => res.json())
-        .then(data => {
-          if(data.status === "found") {
-            dataSiswa = data;
-            namaSiswa.innerText = data.nama;
-            alamatSiswa.innerText = "📍 Alamat: " + data.alamat;
-            checkFormValidity();
-          } else {
-            namaSiswa.innerText = "❌ Tidak Ditemukan";
-            alamatSiswa.innerText = "Nomor absen tidak terdaftar di database.";
-            dataSiswa = null;
-            disableKirim();
-          }
-        })
-        .catch(err => {
-          namaSiswa.innerText = "⚠️ Gangguan Koneksi";
-          alamatSiswa.innerText = "Gagal memuat data dari Google Sheets.";
-        });
-      }, 500);
-    });
-
-    // 2. Logika Kamera Perangkat (Mendukung Kamera HP & Laptop)
-    btnCamera.addEventListener('click', async () => {
-      if (!isStreamActive) {
-        try {
-          const stream = await navigator.mediaDevices.getUserMedia({ 
-            video: { facingMode: "user" }, // Menghadap depan/swafoto
-            audio: false 
-          });
-          video.srcObject = stream;
-          video.classList.remove('hidden');
-          placeholderImg.classList.add('hidden');
-          canvas.classList.add('hidden');
-          btnCamera.innerText = "📸 Klik untuk Jepret (Capture)";
-          btnCamera.className = "bg-rose-500 text-white font-bold px-5 py-2.5 rounded-full hover:bg-rose-600 active:scale-95 shadow-md inline-flex items-center gap-2 transition-all cursor-pointer";
-          isStreamActive = true;
-        } catch (err) {
-          alert("Gagal mengaktifkan kamera. Berikan izin akses kamera pada browser Anda.");
-        }
-      } else {
-        // Proses Mengambil Gambar (Freeze Frame)
-        canvas.width = video.videoWidth || 640;
-        canvas.height = video.videoHeight || 480;
-        canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
-        base64Image = canvas.toDataURL('image/jpeg', 0.8); // Kualitas kompresi 80% hemat memori
-        
-        // Mematikan aliran hardware kamera demi menghemat daya perangkat
-        if (video.srcObject) {
-          video.srcObject.getTracks().forEach(track => track.stop());
-        }
-        
-        video.classList.add('hidden');
-        canvas.classList.remove('hidden');
-        btnCamera.innerText = "🔄 Ambil Ulang Foto";
-        btnCamera.className = "bg-teal-500 text-white font-bold px-5 py-2.5 rounded-full hover:bg-teal-600 active:scale-95 shadow-md inline-flex items-center gap-2 transition-all cursor-pointer";
-        isStreamActive = false;
-        checkFormValidity();
-      }
-    });
-
-    // 3. Memantau Perubahan Status Sakit/Izin
-    document.querySelectorAll('input[name="status"]').forEach(el => {
-      el.addEventListener('change', checkFormValidity);
-    });
-
-    // 4. Validasi Form & Aktivasi Tombol Kirim (Nyala Biru)
-    function checkFormValidity() {
-      const statusSelected = document.querySelector('input[name="status"]:checked');
-      if (dataSiswa && base64Image && statusSelected) {
-        btnKirim.removeAttribute('disabled');
-        btnKirim.className = "w-full py-3.5 bg-blue-600 text-white font-black text-xl rounded-2xl shadow-md hover:bg-blue-700 hover:shadow-lg active:scale-[0.99] transition-all cursor-pointer uppercase tracking-wide";
-      }
-    }
-
-    function disableKirim() {
-      btnKirim.setAttribute('disabled', 'true');
-      btnKirim.className = "w-full py-3.5 bg-slate-200 text-slate-400 font-black text-xl rounded-2xl shadow-inner cursor-not-allowed transition-all uppercase tracking-wide";
-    }
-
-    // 5. Submit Data ke Google Apps Script
-    btnKirim.addEventListener('click', () => {
-      const statusSelected = document.querySelector('input[name="status"]:checked').value;
-      
-      btnKirim.innerText = "⏳ Sedang Mengirim Data...";
-      btnKirim.setAttribute('disabled', 'true');
-      btnKirim.className = "w-full py-3.5 bg-slate-400 text-white font-black text-xl rounded-2xl shadow-inner cursor-not-allowed uppercase tracking-wide animate-pulse";
-
-      fetch(API_URL, {
-        method: 'POST',
-        body: JSON.stringify({
-          action: "submitAbsence",
-          no_absen: inputAbsen.value,
-          nama_murid: dataSiswa.nama,
-          status: statusSelected,
-          tahun_ajaran: TAHUN_AJARAN,
-          image_base64: base64Image
-        })
-      })
-      .then(res => res.json())
-      .then(res => {
-        if(res.status === "success") {
-          alert("🎉 Alhamdulillah! Absen Berhasil direkam ke database.");
-          location.reload(); // Reset form otomatis
-        } else {
-          alert("⚠️ Gagal: " + res.message);
-          checkFormValidity();
-        }
-      })
-      .catch(err => {
-        alert("⚠️ Terjadi gangguan jaringan saat mengirim data.");
-        checkFormValidity();
-      });
-    });
-  </script>
+  <script src="js/config.js"></script>
+  <script src="js/app.js"></script>
 </body>
 </html>
