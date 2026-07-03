@@ -24,24 +24,26 @@ document.addEventListener('DOMContentLoaded', () => {
   let koordinatGPS = "Tidak Diizinkan / Gagal Melacak"; // Nilai default koordinat
 
   // ==========================================
-  // FITUR BARU: Ambil Koordinat GPS HP Murid
+  // FITUR GPS DIPERBAIKI: Menggunakan watchPosition (Anti-Timeout)
   // ==========================================
   if (navigator.geolocation) {
-    navigator.geolocation.getCurrentPosition(
+    // watchPosition akan terus memperbarui lokasi setiap ada sinyal baru tanpa memicu timeout mati
+    navigator.geolocation.watchPosition(
       (position) => {
-        // Format teks koordinat rapi untuk disimpan di Spreadsheet (Contoh: -7.12345, 112.67890)
         koordinatGPS = `${position.coords.latitude}, ${position.coords.longitude}`;
-        console.log("📍 GPS Berhasil Terkunci: " + koordinatGPS);
+        console.log("📍 GPS Terkunci Aktif: " + koordinatGPS);
       },
       (error) => {
-        console.warn("⚠️ GPS Akses Ditolak/Gagal: " + error.message);
-        // Tetap izinkan absen tapi catat status error GPS-nya
-        koordinatGPS = `Gagal Pelacakan (${error.message})`;
+        console.warn("⚠️ GPS Belum Siap / Ditolak: " + error.message);
+        // Jika errornya hanya karena timeout/sedang mencari, jangan overwrite koordinat menjadi gagal total
+        if (koordinatGPS.includes("Tidak Diizinkan")) {
+          koordinatGPS = `Mencari Sinyal GPS... (${error.message})`;
+        }
       },
       {
-        enableHighAccuracy: true, // Paksa gunakan GPS hardware akurasi tinggi jika tersedia
-        timeout: 8000,            // Batas waktu tunggu pencarian lokasi (8 detik)
-        maximumAge: 0             // Hindari penggunaan cache lokasi lama
+        enableHighAccuracy: true, // Berusaha mendapatkan akurasi terbaik
+        timeout: 15000,           // Diperlonggar menjadi 15 detik per siklus pencarian
+        maximumAge: 0
       }
     );
   } else {
