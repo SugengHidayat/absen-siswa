@@ -8,5 +8,5 @@ const CONFIG = {
   API_URL: "https://script.google.com/macros/s/AKfycbyYYcK4JgzB7fhwqxyW2a1FkMdhE8726iqCeHsxxSJcWyulN5E8gZo59YQGuut-jX6gIA/exec",
   
   // Tahun Ajaran Default saat aplikasi pertama kali dimuat
-  TAHUN_AJARAN_DEFAULT: "2025/2026"
+  TAHUN_AJARAN_DEFAULT: "2026/2027"
 };
