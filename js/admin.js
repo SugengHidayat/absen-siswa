@@ -207,15 +207,42 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Aktivasi Perubahan Tahun Ajaran
+  // 6. Aktivasi & Sinkronisasi Perubahan Tahun Ajaran ke Server Utama
   document.getElementById('btnAktifkanTahun').addEventListener('click', () => {
     const thn = document.getElementById('selectTahun').value;
-    sessionStorage.setItem("activeYear", thn);
-    lblTahunAktif.innerText = thn;
+    const btnAktifkan = document.getElementById('btnAktifkanTahun');
     
-    // Langsung muat ulang data tabel secara otomatis begitu tahun ajaran berganti
-    loadDatabaseTable();
-    alert(`Sistem: Tahun ajaran ${thn} berhasil diaktifkan.`);
+    btnAktifkan.innerText = "⏳ Menyimpan...";
+    btnAktifkan.setAttribute('disabled', 'true');
+
+    // Mengirimkan perubahan secara dinamis ke database online (Config_Admin sel E2)
+    fetch(CONFIG.API_URL, {
+      method: 'POST',
+      body: JSON.stringify({
+        action: "updateActiveYear",
+        tahun_ajaran: thn
+      })
+    })
+    .then(res => res.json())
+    .then(res => {
+      if (res.status === "success") {
+        sessionStorage.setItem("activeYear", thn);
+        lblTahunAktif.innerText = thn;
+        
+        // Memuat ulang database siswa sesuai tahun ajaran yang baru diubah
+        loadDatabaseTable();
+        alert(`Sistem: Tahun ajaran ${thn} berhasil diaktifkan secara global untuk semua perangkat.`);
+      } else {
+        alert("Gagal mengubah tahun ajaran di server: " + res.message);
+      }
+      btnAktifkan.innerText = "Aktifkan";
+      btnAktifkan.removeAttribute('disabled');
+    })
+    .catch(() => {
+      alert("Terjadi masalah jaringan saat menghubungi server.");
+      btnAktifkan.innerText = "Aktifkan";
+      btnAktifkan.removeAttribute('disabled');
+    });
   });
 
   document.getElementById('btnRefresh').addEventListener('click', loadDatabaseTable);
