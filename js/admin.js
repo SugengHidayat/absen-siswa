@@ -1,6 +1,7 @@
 /**
  * ADMIN.JS
  * Logika Bisnis Dashboard Pengelola (Halaman admin.html)
+ * Terintegrasi Penuh ke API Live Google Sheets SDN Ranuklindungan I
  */
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -62,6 +63,13 @@ document.addEventListener('DOMContentLoaded', () => {
     
     document.getElementById('adminName').innerText = sessionStorage.getItem("adminName");
     lblTahunAktif.innerText = sessionStorage.getItem("activeYear");
+    
+    // Set nilai default dropdown select sesuai tahun aktif yang tersimpan
+    const currentActiveYear = sessionStorage.getItem("activeYear");
+    const selectTahun = document.getElementById('selectTahun');
+    if (selectTahun && currentActiveYear) {
+      selectTahun.value = currentActiveYear;
+    }
     
     const avatar = sessionStorage.getItem("adminAvatar");
     if(avatar) {
@@ -128,31 +136,75 @@ document.addEventListener('DOMContentLoaded', () => {
         btnUploadExcel.className = "w-full py-2.5 bg-slate-200 text-slate-400 font-bold rounded-xl cursor-not-allowed transition-all text-sm uppercase tracking-wider";
         btnUploadExcel.innerText = "Proses & Kirim Data";
         loadDatabaseTable();
+      } else {
+        alert("Gagal mengunggah data masal: " + res.message);
+        btnUploadExcel.removeAttribute('disabled');
+        btnUploadExcel.innerText = "Coba Kirim Ulang";
       }
+    })
+    .catch(() => {
+      alert("Terjadi gangguan jaringan saat mengunggah data masal.");
+      btnUploadExcel.removeAttribute('disabled');
+      btnUploadExcel.innerText = "Coba Kirim Ulang";
     });
   });
 
-  // 5. Render Pratinjau Tabel Murid Kelas 4
+  // 5. Render Database Riil Siswa dari Google Spreadsheet (LIVE UPDATE)
   function loadDatabaseTable() {
-    tabelMuridBody.innerHTML = `<tr><td colspan="4" class="py-6 text-center text-blue-600 font-bold animate-pulse">⏳ Memuat database spreadsheet...</td></tr>`;
+    tabelMuridBody.innerHTML = `
+      <tr>
+        <td colspan="4" class="py-8 text-center text-blue-600 font-bold animate-pulse">
+          ⏳ Sedang mengambil data riil dari Google Sheets...
+        </td>
+      </tr>
+    `;
     
-    // Data statis awal untuk visualisasi tabel di GitHub Pages sebelum sinkronisasi penuh
-    setTimeout(() => {
+    const activeYear = sessionStorage.getItem("activeYear") || CONFIG.TAHUN_AJARAN_DEFAULT;
+
+    fetch(CONFIG.API_URL, {
+      method: 'POST',
+      body: JSON.stringify({ 
+        action: "getAllStudents", 
+        tahun_ajaran: activeYear 
+      })
+    })
+    .then(res => res.json())
+    .then(data => {
+      if (data.status === "success" && data.students && data.students.length > 0) {
+        tabelMuridBody.innerHTML = ""; // Bersihkan indikator loading
+        
+        data.students.forEach(siswa => {
+          tabelMuridBody.innerHTML += `
+            <tr class="hover:bg-slate-50 transition-colors border-b border-slate-100">
+              <td class="py-3.5 px-4 text-center font-bold text-slate-700">${siswa.no_absen}</td>
+              <td class="py-3.5 px-4 font-bold text-blue-600">${siswa.nama}</td>
+              <td class="py-3.5 px-4 text-slate-600">${siswa.alamat}</td>
+              <td class="py-3.5 px-4 text-center text-lg">
+                ${siswa.foto_url ? `<a href="${siswa.foto_url}" target="_blank" class="text-blue-500 hover:underline">👁️ Lihat</a>` : '👤'}
+              </td>
+            </tr>
+          `;
+        });
+      } else {
+        tabelMuridBody.innerHTML = `
+          <tr>
+            <td colspan="4" class="py-8 text-center text-slate-400 font-medium">
+              📭 Belum ada data murid terdaftar untuk Tahun Ajaran ${activeYear}.
+            </td>
+          </tr>
+        `;
+      }
+    })
+    .catch((error) => {
+      console.error("Error fetching table:", error);
       tabelMuridBody.innerHTML = `
-        <tr class="hover:bg-slate-50">
-          <td class="py-3.5 px-4 text-center font-bold text-slate-700">1</td>
-          <td class="py-3.5 px-4 font-bold text-blue-600">Ahmad Dhani</td>
-          <td class="py-3.5 px-4 text-slate-600">Jl. Raya Ranuklindungan No. 12</td>
-          <td class="py-3.5 px-4 text-center text-lg">👤</td>
-        </tr>
-        <tr class="hover:bg-slate-50">
-          <td class="py-3.5 px-4 text-center font-bold text-slate-700">2</td>
-          <td class="py-3.5 px-4 font-bold text-blue-600">Siti Aminah</td>
-          <td class="py-3.5 px-4 text-slate-600">Dsn. Krajan RT 02 / RW 01</td>
-          <td class="py-3.5 px-4 text-center text-lg">👤</td>
+        <tr>
+          <td colspan="4" class="py-8 text-center text-rose-500 font-bold">
+            ⚠️ Gagal memuat database. Pastikan Web App Script Anda sudah di-deploy ulang.
+          </td>
         </tr>
       `;
-    }, 400);
+    });
   }
 
   // Aktivasi Perubahan Tahun Ajaran
@@ -160,6 +212,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const thn = document.getElementById('selectTahun').value;
     sessionStorage.setItem("activeYear", thn);
     lblTahunAktif.innerText = thn;
+    
+    // Langsung muat ulang data tabel secara otomatis begitu tahun ajaran berganti
+    loadDatabaseTable();
     alert(`Sistem: Tahun ajaran ${thn} berhasil diaktifkan.`);
   });
 
