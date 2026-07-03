@@ -1,7 +1,7 @@
 /**
  * APP.JS
  * Logika Bisnis Formulir Absensi Murid (Halaman index.html)
- * Terintegrasi Penuh ke API Live Google Sheets SDN Ranuklindungan I
+ * Terintegrasi Penuh ke API Live Google Sheets SDN Ranuklindungan I + Geolokasi GPS
  */
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -21,6 +21,32 @@ document.addEventListener('DOMContentLoaded', () => {
   let dataSiswa = null;
   let debounceTimer;
   let TAHUN_AJARAN_GLOBAL = ""; // Akan diisi otomatis dari server Google Sheets
+  let koordinatGPS = "Tidak Diizinkan / Gagal Melacak"; // Nilai default koordinat
+
+  // ==========================================
+  // FITUR BARU: Ambil Koordinat GPS HP Murid
+  // ==========================================
+  if (navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        // Format teks koordinat rapi untuk disimpan di Spreadsheet (Contoh: -7.12345, 112.67890)
+        koordinatGPS = `${position.coords.latitude}, ${position.coords.longitude}`;
+        console.log("📍 GPS Berhasil Terkunci: " + koordinatGPS);
+      },
+      (error) => {
+        console.warn("⚠️ GPS Akses Ditolak/Gagal: " + error.message);
+        // Tetap izinkan absen tapi catat status error GPS-nya
+        koordinatGPS = `Gagal Pelacakan (${error.message})`;
+      },
+      {
+        enableHighAccuracy: true, // Paksa gunakan GPS hardware akurasi tinggi jika tersedia
+        timeout: 8000,            // Batas waktu tunggu pencarian lokasi (8 detik)
+        maximumAge: 0             // Hindari penggunaan cache lokasi lama
+      }
+    );
+  } else {
+    koordinatGPS = "Browser Tidak Mendukung GPS";
+  }
 
   // 1. Ambil Tahun Ajaran Aktif Global dari Server Saat Halaman Dimuat
   fetch(CONFIG.API_URL, {
@@ -157,7 +183,7 @@ document.addEventListener('DOMContentLoaded', () => {
     btnKirim.className = "w-full py-3.5 bg-slate-200 text-slate-400 font-black text-xl rounded-2xl shadow-inner cursor-not-allowed transition-all uppercase tracking-wide";
   }
 
-  // 6. Kirim Data Absen Akhir ke Server
+  // 6. Kirim Data Absen Akhir ke Server (Sudah Termasuk Payload Lokasi GPS)
   btnKirim.addEventListener('click', () => {
     const statusSelected = document.querySelector('input[name="status"]:checked').value;
     
@@ -173,7 +199,8 @@ document.addEventListener('DOMContentLoaded', () => {
         nama_murid: dataSiswa.nama,
         status: statusSelected,
         tahun_ajaran: TAHUN_AJARAN_GLOBAL,
-        image_base64: base64Image
+        image_base64: base64Image,
+        lokasi: koordinatGPS // <-- MENYELIPKAN DATA GPS AKTIF KE PAYLOAD SERVER
       })
     })
     .then(res => res.json())
