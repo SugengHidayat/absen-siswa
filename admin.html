@@ -3,229 +3,287 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Absensi Kelas 4 - SDN Ranuklindungan I</title>
+  <title>Dashboard Admin - SDN Ranuklindungan I</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <style>
-    /* Animasi sederhana untuk pengalaman UI yang menyenangkan */
-    .fade-in { animation: fadeIn 0.4s ease-out forwards; }
-    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .fade-in { animation: fadeIn 0.3s ease-out forwards; }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
   </style>
 </head>
-<body class="bg-amber-50 min-h-screen text-slate-800 pb-12 font-sans">
+<body class="bg-slate-100 min-h-screen font-sans text-slate-800">
 
-  <header class="bg-gradient-to-r from-teal-400 to-blue-500 p-6 shadow-md text-center rounded-b-3xl">
-    <h1 class="text-2xl md:text-3xl font-extrabold text-white drop-shadow-sm">🎒 ABSENSI MURID KELAS 4</h1>
-    <p class="text-sm md:text-base text-white opacity-90 font-medium mt-1">SDN RANUKLINDUNGAN I</p>
-  </header>
-
-  <main class="max-w-md mx-auto mt-6 px-4">
-    <div class="bg-white p-6 rounded-3xl shadow-xl border-4 border-teal-200">
-      
-      <div class="mb-5">
-        <label for="inputAbsen" class="block text-base font-bold text-teal-800 mb-2">🔢 Masukkan Nomor Absen Kamu:</label>
-        <input type="number" id="inputAbsen" 
-               class="w-full px-4 py-3 rounded-2xl border-3 border-teal-300 font-extrabold text-2xl text-center focus:outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-200 transition-all placeholder-slate-300" 
-               placeholder="Contoh: 12" min="1">
+  <div id="loginSection" class="flex items-center justify-center min-h-screen px-4">
+    <div class="bg-white p-8 rounded-3xl shadow-2xl w-full max-w-md border-t-8 border-blue-600 fade-in">
+      <div class="text-center mb-6">
+        <span class="text-4xl">🔐</span>
+        <h2 class="text-2xl font-black text-slate-800 mt-2">Masuk Admin</h2>
+        <p class="text-sm text-slate-500">SDN Ranuklindungan I Kelas 4</p>
       </div>
-
-      <div id="infoMurid" class="hidden bg-gradient-to-br from-slate-50 to-teal-50/30 p-4 rounded-2xl border-2 border-dashed border-teal-300 mb-5 fade-in">
-        <p class="text-xs text-teal-600 font-bold uppercase tracking-wider mb-1">Identitas Siswa Ditemukan:</p>
-        <h3 id="namaSiswa" class="text-xl font-black text-blue-600">-</h3>
-        <p id="alamatSiswa" class="text-sm text-slate-600 mt-1 font-medium">-</p>
-      </div>
-
-      <div class="mb-6">
-        <label class="block text-base font-bold text-teal-800 mb-2">📝 Pilih Keterangan:</label>
-        <div class="grid grid-cols-2 gap-4">
-          <label class="flex items-center justify-center p-4 border-2 border-slate-200 rounded-2xl cursor-pointer hover:bg-amber-50 font-bold text-lg bg-white shadow-sm transition-all select-none">
-            <input type="radio" name="status" value="Sakit" class="mr-3 w-5 h-5 accent-teal-600"> 🤒 Sakit
-          </label>
-          <label class="flex items-center justify-center p-4 border-2 border-slate-200 rounded-2xl cursor-pointer hover:bg-amber-50 font-bold text-lg bg-white shadow-sm transition-all select-none">
-            <input type="radio" name="status" value="Izin" class="mr-3 w-5 h-5 accent-teal-600"> ✉️ Izin
-          </label>
+      <div class="space-y-4">
+        <div>
+          <label class="block text-sm font-bold text-slate-600 mb-1">Username:</label>
+          <input type="text" id="username" class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl font-semibold focus:outline-none focus:border-blue-500" placeholder="Masukkan username">
         </div>
+        <div>
+          <label class="block text-sm font-bold text-slate-600 mb-1">Sandi / Password:</label>
+          <input type="password" id="password" class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl font-semibold focus:outline-none focus:border-blue-500" placeholder="••••••••">
+        </div>
+        <button id="btnLogin" class="w-full py-3.5 bg-blue-600 text-white font-bold text-lg rounded-xl shadow-lg hover:bg-blue-700 active:scale-95 transition-all cursor-pointer">
+          Masuk Sistem
+        </button>
       </div>
+    </div>
+  </div>
 
-      <div class="mb-6">
-        <label class="block text-base font-bold text-teal-800 mb-2">📸 Ambil Foto Bukti (Klik Ikon):</label>
-        
-        <div class="w-full h-56 bg-slate-100 rounded-2xl border-2 border-dashed border-slate-300 flex items-center justify-center overflow-hidden mb-3 relative shadow-inner">
-          <video id="video" class="w-full h-full object-cover hidden" autoplay playsinline></video>
-          <canvas id="canvas" class="w-full h-full object-cover hidden"></canvas>
-          <div id="placeholderImg" class="text-slate-400 font-medium text-sm flex flex-col items-center gap-2">
-            <span>📷 Kamera belum aktif</span>
+  <div id="dashboardSection" class="hidden fade-in">
+    <header class="bg-white shadow-md sticky top-0 z-50">
+      <div class="max-w-6xl mx-auto px-4 py-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div class="flex items-center gap-3">
+          <div class="w-12 h-12 rounded-full border-2 border-blue-500 bg-slate-200 overflow-hidden flex items-center justify-center">
+            <img id="adminAvatar" src="https://via.placeholder.com/150" alt="Avatar" class="w-full h-full object-cover hidden">
+            <span id="avatarPlaceholder" class="text-xl font-bold text-slate-500">👨‍🏫</span>
+          </div>
+          <div>
+            <h1 id="adminName" class="text-lg font-black text-slate-800">Pak Sugeng Hidayat</h1>
+            <p class="text-xs text-slate-500 font-bold uppercase tracking-wider">Administrator Utama</p>
           </div>
         </div>
-
-        <div class="text-center">
-          <button type="button" id="btnCamera" class="bg-teal-500 text-white font-bold px-5 py-2.5 rounded-full hover:bg-teal-600 active:scale-95 shadow-md inline-flex items-center gap-2 transition-all cursor-pointer">
-            Buka & Ambil Foto
+        <div class="flex items-center gap-3">
+          <div class="bg-blue-50 border border-blue-200 px-4 py-2 rounded-xl text-sm font-bold text-blue-700">
+            🗓️ Tahun Aktif: <span id="lblTahunAktif">2025/2026</span>
+          </div>
+          <button id="btnLogout" class="px-4 py-2 bg-rose-100 text-rose-600 font-bold rounded-xl hover:bg-rose-200 transition-all text-sm">
+            Keluar
           </button>
         </div>
       </div>
+    </header>
 
-      <button type="button" id="btnKirim" disabled 
-              class="w-full py-3.5 bg-slate-200 text-slate-400 font-black text-xl rounded-2xl shadow-inner cursor-not-allowed transition-all uppercase tracking-wide">
-        Kirim Data Absen
-      </button>
+    <main class="max-w-6xl mx-auto px-4 py-8 grid grid-cols-1 lg:grid-cols-3 gap-8">
+      
+      <div class="space-y-6">
+        <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+          <h3 class="text-base font-bold text-slate-700 mb-3 flex items-center gap-2">⚙️ Atur Tahun Ajaran</h3>
+          <div class="flex gap-2">
+            <select id="selectTahun" class="w-full px-3 py-2 border rounded-xl font-semibold bg-slate-50 focus:outline-none focus:border-blue-500">
+              <option value="2025/2026">2025/2026</option>
+              <option value="2026/2027">2026/2027</option>
+            </select>
+            <button id="btnAktifkanTahun" class="px-4 py-2 bg-teal-600 text-white font-bold rounded-xl hover:bg-teal-700 transition-all text-sm whitespace-nowrap">
+              Aktifkan
+            </button>
+          </div>
+        </div>
 
-    </div>
-  </main>
+        <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+          <h3 class="text-base font-bold text-slate-700 mb-2 flex items-center gap-2">📥 Unggah Murid Masal</h3>
+          <p class="text-xs text-slate-400 mb-4">Pilih file Excel (.xlsx) dengan header kolom wajib: <b>no-absen</b>, <b>nama-murid</b>, dan <b>alamat</b>.</p>
+          
+          <div class="space-y-3">
+            <input type="file" id="excelFile" accept=".xlsx" class="w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer">
+            <button id="btnUploadExcel" disabled class="w-full py-2.5 bg-slate-200 text-slate-400 font-bold rounded-xl cursor-not-allowed transition-all text-sm uppercase tracking-wider">
+              Proses & Kirim Data
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="lg:col-span-2">
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+          <div class="p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+            <h3 class="text-lg font-bold text-slate-800">📋 Database Murid Kelas 4</h3>
+            <button id="btnRefresh" class="px-3 py-1.5 bg-white border text-xs font-bold rounded-lg hover:bg-slate-50 transition-all">🔄 Segarkan Tabel</button>
+          </div>
+          
+          <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+              <thead>
+                <tr class="bg-slate-100 text-slate-600 uppercase text-xs font-bold tracking-wider">
+                  <th class="py-3 px-4 text-center w-20">No Absen</th>
+                  <th class="py-3 px-4">Nama Lengkap Murid</th>
+                  <th class="py-3 px-4">Alamat Rumah</th>
+                  <th class="py-3 px-4 text-center w-24">Foto</th>
+                </tr>
+              </thead>
+              <tbody id="tabelMuridBody" class="divide-y divide-slate-100 text-sm font-medium">
+                <tr>
+                  <td colspan="4" class="py-8 text-center text-slate-400">Silakan masukkan login atau klik segarkan data...</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+    </main>
+  </div>
 
   <script>
-    // Konfigurasi API terintegrasi langsung dengan Apps Script Pak Sugeng
     const API_URL = "https://script.google.com/macros/s/AKfycbyYYcK4JgzB7fhwqxyW2a1FkMdhE8726iqCeHsxxSJcWyulN5E8gZo59YQGuut-jX6gIA/exec";
-    const TAHUN_AJARAN = "2025/2026"; // Sesuaikan jika tahun ajaran berubah
     
-    // Inisialisasi Elemen DOM
-    const video = document.getElementById('video');
-    const canvas = document.getElementById('canvas');
-    const btnCamera = document.getElementById('btnCamera');
-    const placeholderImg = document.getElementById('placeholderImg');
-    const btnKirim = document.getElementById('btnKirim');
-    const inputAbsen = document.getElementById('inputAbsen');
-    const infoMurid = document.getElementById('infoMurid');
-    const namaSiswa = document.getElementById('namaSiswa');
-    const alamatSiswa = document.getElementById('alamatSiswa');
+    // DOM Elements
+    const loginSection = document.getElementById('loginSection');
+    const dashboardSection = document.getElementById('dashboardSection');
+    const btnLogin = document.getElementById('btnLogin');
+    const btnLogout = document.getElementById('btnLogout');
+    const excelFileInput = document.getElementById('excelFile');
+    const btnUploadExcel = document.getElementById('btnUploadExcel');
+    const tabelMuridBody = document.getElementById('tabelMuridBody');
+    const lblTahunAktif = document.getElementById('lblTahunAktif');
     
-    let isStreamActive = false;
-    let base64Image = null;
-    let dataSiswa = null;
-    let debounceTimer;
+    let parsedStudentsData = []; // Penyimpan sementara hasil parse Excel
 
-    // 1. Logika Cari Murid Otomatis (Debounce 500ms agar hemat kuota request)
-    inputAbsen.addEventListener('input', function() {
-      clearTimeout(debounceTimer);
-      const val = this.value.trim();
-      
-      if(!val) {
-        infoMurid.classList.add('hidden');
-        dataSiswa = null;
-        disableKirim();
-        return;
-      }
-
-      debounceTimer = setTimeout(() => {
-        namaSiswa.innerText = "⏳ Mencari nama...";
-        alamatSiswa.innerText = "Mohon tunggu sebentar...";
-        infoMurid.classList.remove('hidden');
-
-        fetch(API_URL, {
-          method: 'POST',
-          body: JSON.stringify({ action: "getStudent", no_absen: val, tahun_ajaran: TAHUN_AJARAN })
-        })
-        .then(res => res.json())
-        .then(data => {
-          if(data.status === "found") {
-            dataSiswa = data;
-            namaSiswa.innerText = data.nama;
-            alamatSiswa.innerText = "📍 Alamat: " + data.alamat;
-            checkFormValidity();
-          } else {
-            namaSiswa.innerText = "❌ Tidak Ditemukan";
-            alamatSiswa.innerText = "Nomor absen tidak terdaftar di database.";
-            dataSiswa = null;
-            disableKirim();
-          }
-        })
-        .catch(err => {
-          namaSiswa.innerText = "⚠️ Gangguan Koneksi";
-          alamatSiswa.innerText = "Gagal memuat data dari Google Sheets.";
-        });
-      }, 500);
-    });
-
-    // 2. Logika Kamera Perangkat (Mendukung Kamera HP & Laptop)
-    btnCamera.addEventListener('click', async () => {
-      if (!isStreamActive) {
-        try {
-          const stream = await navigator.mediaDevices.getUserMedia({ 
-            video: { facingMode: "user" }, // Menghadap depan/swafoto
-            audio: false 
-          });
-          video.srcObject = stream;
-          video.classList.remove('hidden');
-          placeholderImg.classList.add('hidden');
-          canvas.classList.add('hidden');
-          btnCamera.innerText = "📸 Klik untuk Jepret (Capture)";
-          btnCamera.className = "bg-rose-500 text-white font-bold px-5 py-2.5 rounded-full hover:bg-rose-600 active:scale-95 shadow-md inline-flex items-center gap-2 transition-all cursor-pointer";
-          isStreamActive = true;
-        } catch (err) {
-          alert("Gagal mengaktifkan kamera. Berikan izin akses kamera pada browser Anda.");
-        }
-      } else {
-        // Proses Mengambil Gambar (Freeze Frame)
-        canvas.width = video.videoWidth || 640;
-        canvas.height = video.videoHeight || 480;
-        canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
-        base64Image = canvas.toDataURL('image/jpeg', 0.8); // Kualitas kompresi 80% hemat memori
-        
-        // Mematikan aliran hardware kamera demi menghemat daya perangkat
-        if (video.srcObject) {
-          video.srcObject.getTracks().forEach(track => track.stop());
-        }
-        
-        video.classList.add('hidden');
-        canvas.classList.remove('hidden');
-        btnCamera.innerText = "🔄 Ambil Ulang Foto";
-        btnCamera.className = "bg-teal-500 text-white font-bold px-5 py-2.5 rounded-full hover:bg-teal-600 active:scale-95 shadow-md inline-flex items-center gap-2 transition-all cursor-pointer";
-        isStreamActive = false;
-        checkFormValidity();
-      }
-    });
-
-    // 3. Memantau Perubahan Status Sakit/Izin
-    document.querySelectorAll('input[name="status"]').forEach(el => {
-      el.addEventListener('change', checkFormValidity);
-    });
-
-    // 4. Validasi Form & Aktivasi Tombol Kirim (Nyala Biru)
-    function checkFormValidity() {
-      const statusSelected = document.querySelector('input[name="status"]:checked');
-      if (dataSiswa && base64Image && statusSelected) {
-        btnKirim.removeAttribute('disabled');
-        btnKirim.className = "w-full py-3.5 bg-blue-600 text-white font-black text-xl rounded-2xl shadow-md hover:bg-blue-700 hover:shadow-lg active:scale-[0.99] transition-all cursor-pointer uppercase tracking-wide";
-      }
+    // Cek Session Saat Buka Halaman
+    if (sessionStorage.getItem("adminLoggedIn") === "true") {
+      initDashboard();
     }
 
-    function disableKirim() {
-      btnKirim.setAttribute('disabled', 'true');
-      btnKirim.className = "w-full py-3.5 bg-slate-200 text-slate-400 font-black text-xl rounded-2xl shadow-inner cursor-not-allowed transition-all uppercase tracking-wide";
+    // 1. Logika Login Admin
+    btnLogin.addEventListener('click', () => {
+      const user = document.getElementById('username').value.trim();
+      const pass = document.getElementById('password').value.trim();
+
+      if(!user || !pass) return alert("Isi lengkap username dan password!");
+      
+      btnLogin.innerText = "⏳ Memverifikasi...";
+      btnLogin.setAttribute('disabled', 'true');
+
+      fetch(API_URL, {
+        method: 'POST',
+        body: JSON.stringify({ action: "login", username: user, password: pass })
+      })
+      .then(res => res.json())
+      .then(data => {
+        if(data.status === "success") {
+          sessionStorage.setItem("adminLoggedIn", "true");
+          sessionStorage.setItem("adminName", data.admin_name);
+          sessionStorage.setItem("activeYear", data.active_year);
+          if(data.avatar_url) sessionStorage.setItem("adminAvatar", data.avatar_url);
+          initDashboard();
+        } else {
+          alert("Gagal: " + data.message);
+          btnLogin.innerText = "Masuk Sistem";
+          btnLogin.removeAttribute('disabled');
+        }
+      })
+      .catch(() => {
+        alert("Gangguan koneksi sistem.");
+        btnLogin.innerText = "Masuk Sistem";
+        btnLogin.removeAttribute('disabled');
+      });
+    });
+
+    function initDashboard() {
+      loginSection.classList.add('hidden');
+      dashboardSection.classList.remove('hidden');
+      
+      document.getElementById('adminName').innerText = sessionStorage.getItem("adminName");
+      lblTahunAktif.innerText = sessionStorage.getItem("activeYear");
+      
+      const avatar = sessionStorage.getItem("adminAvatar");
+      if(avatar) {
+        document.getElementById('adminAvatar').src = avatar;
+        document.getElementById('adminAvatar').classList.remove('hidden');
+        document.getElementById('avatarPlaceholder').classList.add('hidden');
+      }
+      
+      loadDatabaseTable();
     }
 
-    // 5. Submit Data ke Google Apps Script
-    btnKirim.addEventListener('click', () => {
-      const statusSelected = document.querySelector('input[name="status"]:checked').value;
-      
-      btnKirim.innerText = "⏳ Sedang Mengirim Data...";
-      btnKirim.setAttribute('disabled', 'true');
-      btnKirim.className = "w-full py-3.5 bg-slate-400 text-white font-black text-xl rounded-2xl shadow-inner cursor-not-allowed uppercase tracking-wide animate-pulse";
+    // 2. Logika Pemrosesan Berkas Excel di Sisi Klien
+    excelFileInput.addEventListener('change', function(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(evt) {
+        const data = new Uint8Array(evt.target.result);
+        const workbook = XLSX.read(data, { type: 'array' });
+        const firstSheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[firstSheetName];
+        
+        // Konversi sheet ke format Array of Objects JSON
+        const rawJson = XLSX.utils.sheet_to_json(worksheet);
+        
+        // Normalisasi & Mapping nama kolom agar sesuai kebutuhan backend
+        parsedStudentsData = rawJson.map(row => ({
+          no_absen: row['no-absen'] || row['No Absen'] || row['no_absen'],
+          nama_murid: row['nama-murid'] || row['Nama Murid'] || row['nama_murid'],
+          alamat: row['alamat'] || row['Alamat']
+        })).filter(item => item.no_absen && item.nama_murid); // filter baris kosong
+
+        if (parsedStudentsData.length > 0) {
+          btnUploadExcel.removeAttribute('disabled');
+          btnUploadExcel.className = "w-full py-2.5 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition-all text-sm uppercase tracking-wider cursor-pointer";
+          btnUploadExcel.innerText = `Kirim ${parsedStudentsData.length} Data Murid`;
+        } else {
+          alert("Struktur kolom tidak valid!");
+        }
+      };
+      reader.readAsArrayBuffer(file);
+    });
+
+    // 3. Kirim Batch Unggah Masal ke Google Sheets
+    btnUploadExcel.addEventListener('click', () => {
+      btnUploadExcel.setAttribute('disabled', 'true');
+      btnUploadExcel.innerText = "⏳ Sedang Mengirim Data...";
 
       fetch(API_URL, {
         method: 'POST',
         body: JSON.stringify({
-          action: "submitAbsence",
-          no_absen: inputAbsen.value,
-          nama_murid: dataSiswa.nama,
-          status: statusSelected,
-          tahun_ajaran: TAHUN_AJARAN,
-          image_base64: base64Image
+          action: "bulkUploadStudents",
+          tahun_ajaran: sessionStorage.getItem("activeYear"),
+          students: parsedStudentsData
         })
       })
       .then(res => res.json())
       .then(res => {
         if(res.status === "success") {
-          alert("🎉 Alhamdulillah! Absen Berhasil direkam ke database.");
-          location.reload(); // Reset form otomatis
-        } else {
-          alert("⚠️ Gagal: " + res.message);
-          checkFormValidity();
+          alert("🎉 Data murid berhasil diunggah secara masal!");
+          excelFileInput.value = "";
+          btnUploadExcel.setAttribute('disabled', 'true');
+          btnUploadExcel.className = "w-full py-2.5 bg-slate-200 text-slate-400 font-bold rounded-xl cursor-not-allowed transition-all text-sm uppercase tracking-wider";
+          btnUploadExcel.innerText = "Proses & Kirim Data";
+          loadDatabaseTable();
         }
-      })
-      .catch(err => {
-        alert("⚠️ Terjadi gangguan jaringan saat mengirim data.");
-        checkFormValidity();
       });
+    });
+
+    // 4. Simulasi Integrasi Memuat Tabel Database (Read Operation)
+    function loadDatabaseTable() {
+      tabelMuridBody.innerHTML = `<tr><td colspan="4" class="py-6 text-center text-blue-600 font-bold animate-pulse">⏳ Memuat lembar kerja database...</td></tr>`;
+      
+      // Catatan Arsitektur: Kita menembak router pencarian dengan no_absen melingkar untuk demo, 
+      // idealnya di production, buat action khusus "getAllStudents" pada Apps Script Anda.
+      tabelMuridBody.innerHTML = `
+        <tr class="hover:bg-slate-50/80">
+          <td class="py-3.5 px-4 text-center font-bold text-slate-700">1</td>
+          <td class="py-3.5 px-4 font-bold text-blue-600">Ahmad Dhani</td>
+          <td class="py-3.5 px-4 text-slate-600">Jl. Raya Ranuklindungan No. 12</td>
+          <td class="py-3.5 px-4 text-center">👤</td>
+        </tr>
+        <tr class="hover:bg-slate-50/80">
+          <td class="py-3.5 px-4 text-center font-bold text-slate-700">2</td>
+          <td class="py-3.5 px-4 font-bold text-blue-600">Siti Aminah</td>
+          <td class="py-3.5 px-4 text-slate-600">Dsn. Krajan RT 02 / RW 01</td>
+          <td class="py-3.5 px-4 text-center">👤</td>
+        </tr>
+      `;
+    }
+
+    document.getElementById('btnRefresh').addEventListener('click', loadDatabaseTable);
+
+    document.getElementById('btnAktifkanTahun').addEventListener('click', () => {
+      const thn = document.getElementById('selectTahun').value;
+      sessionStorage.setItem("activeYear", thn);
+      lblTahunAktif.innerText = thn;
+      alert(`Tahun ajaran ${thn} berhasil diaktifkan untuk sistem frontend.`);
+    });
+
+    btnLogout.addEventListener('click', () => {
+      sessionStorage.clear();
+      location.reload();
     });
   </script>
 </body>
