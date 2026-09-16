@@ -206,6 +206,9 @@
                 <option value="11">Desember</option>
               </select>
             </div>
+            <button id="btnLihatRekap" class="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white font-bold px-5 py-2.5 rounded-xl text-sm shadow-md transition-all active:scale-95 cursor-pointer disabled:bg-slate-300 disabled:cursor-not-allowed">
+              👁️ Lihat Laporan
+            </button>
             <button id="btnBuatRekap" class="w-full sm:w-auto bg-amber-500 hover:bg-amber-600 text-white font-bold px-5 py-2.5 rounded-xl text-sm shadow-md transition-all active:scale-95 cursor-pointer disabled:bg-slate-300 disabled:cursor-not-allowed">
               📄 Buat Rekap
             </button>
@@ -238,8 +241,13 @@
       const selectTahun = document.getElementById('selectTahun');
       const areaBuatRekap = document.getElementById('areaBuatRekap');
       const bulanRekap = document.getElementById('bulanRekap');
+      const btnLihatRekap = document.getElementById('btnLihatRekap');
       const btnBuatRekap = document.getElementById('btnBuatRekap');
       const pesanBuatRekap = document.getElementById('pesanBuatRekap');
+      const modalTitle = document.getElementById('modalTitle');
+      const modalSubtitle = document.getElementById('modalSubtitle');
+      const modalTableHead = document.getElementById('modalTableHead');
+      const modalTableBody = document.getElementById('modalTableBody');
 
       function getApiUrl() {
         if (typeof API_URL !== 'undefined' && API_URL) return API_URL;
@@ -385,6 +393,105 @@
 
       document.getElementById('btnTutupModal').addEventListener('click', function () {
         areaBuatRekap.classList.add('hidden');
+      });
+
+      function tampilkanIsiSheetRekap(result) {
+        const rows = Array.isArray(result.rows) ? result.rows : [];
+        const headerTanggal = rows[1] || [];
+
+        modalTitle.textContent = '📋 Rekap Absensi ' + result.sheet_name;
+        modalSubtitle.textContent = 'Data ditampilkan dari sheet ' + result.sheet_name;
+        modalTableHead.innerHTML = '';
+        modalTableBody.innerHTML = '';
+
+        const barisJudul = document.createElement('tr');
+        const judulUtama = [
+          { teks: 'NO', rowspan: 2 },
+          { teks: 'NAMA MURID', rowspan: 2 },
+          { teks: result.sheet_title || result.sheet_name, colspan: 31 },
+          { teks: 'JUMLAH', colspan: 2 }
+        ];
+
+        judulUtama.forEach(function (item) {
+          const th = document.createElement('th');
+          th.textContent = item.teks;
+          th.className = 'py-3 px-2 text-center border border-slate-600 whitespace-nowrap';
+          if (item.rowspan) th.rowSpan = item.rowspan;
+          if (item.colspan) th.colSpan = item.colspan;
+          barisJudul.appendChild(th);
+        });
+        modalTableHead.appendChild(barisJudul);
+
+        const barisTanggal = document.createElement('tr');
+        for (let kolom = 2; kolom <= 34; kolom++) {
+          const th = document.createElement('th');
+          th.textContent = headerTanggal[kolom] === undefined ? '' : headerTanggal[kolom];
+          th.className = 'py-2 px-2 text-center border border-slate-600 min-w-[38px]';
+          barisTanggal.appendChild(th);
+        }
+        modalTableHead.appendChild(barisTanggal);
+
+        rows.slice(2).forEach(function (row) {
+          if (!row[0] && !row[1]) return;
+          const tr = document.createElement('tr');
+          for (let kolom = 0; kolom <= 34; kolom++) {
+            const td = document.createElement('td');
+            td.textContent = row[kolom] === undefined ? '' : row[kolom];
+            td.className = kolom === 1
+              ? 'py-2 px-3 border border-slate-200 whitespace-nowrap font-semibold'
+              : 'py-2 px-2 border border-slate-200 text-center';
+            tr.appendChild(td);
+          }
+          modalTableBody.appendChild(tr);
+        });
+
+        if (!modalTableBody.children.length) {
+          const tr = document.createElement('tr');
+          const td = document.createElement('td');
+          td.colSpan = 35;
+          td.className = 'py-8 text-center text-slate-400';
+          td.textContent = 'Sheet rekap belum berisi data murid.';
+          tr.appendChild(td);
+          modalTableBody.appendChild(tr);
+        }
+      }
+
+      btnLihatRekap.addEventListener('click', async function () {
+        const apiUrl = getApiUrl();
+        if (!apiUrl) {
+          tampilkanPesanRekap('URL API belum ditemukan. Periksa js/config.js.', false);
+          return;
+        }
+
+        btnLihatRekap.disabled = true;
+        btnLihatRekap.textContent = 'Memuat...';
+        modalTableHead.innerHTML = '';
+        modalTableBody.innerHTML = '<tr><td colspan="35" class="py-8 text-center text-slate-400">Memuat sheet rekap...</td></tr>';
+
+        try {
+          const response = await fetch(apiUrl, {
+            method: 'POST',
+            body: JSON.stringify({
+              action: 'getMonthlyRecapSheet',
+              tahun_ajaran: tahunAktif(),
+              bulan: Number(bulanRekap.value)
+            })
+          });
+          const result = await response.json();
+
+          if (result.status !== 'success') {
+            throw new Error(result.message || 'Sheet rekap gagal dibuka.');
+          }
+
+          tampilkanIsiSheetRekap(result);
+          tampilkanPesanRekap('Laporan dari sheet ' + result.sheet_name + ' berhasil ditampilkan.', true, result.sheet_url || '');
+        } catch (error) {
+          modalTableBody.innerHTML = '<tr><td colspan="35" class="py-8 text-center text-rose-500">Sheet rekap tidak dapat ditampilkan.</td></tr>';
+          tampilkanPesanRekap(error.message || 'Terjadi kesalahan saat membuka sheet rekap.', false);
+        } finally {
+          btnLihatRekap.disabled = false;
+          btnLihatRekap.textContent = '👁️ Lihat Laporan';
+        }
       });
 
       btnBuatRekap.addEventListener('click', async function () {
