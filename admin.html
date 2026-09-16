@@ -218,7 +218,7 @@
       <div class="p-4 border-t border-slate-100 bg-slate-50">
         <div class="flex flex-col sm:flex-row gap-3 justify-between items-center">
           <p class="text-xs text-slate-400 italic text-center sm:text-left">*Data dihitung bersumber langsung dari rekam data lembar log repositori.</p>
-          <button id="btnUnduhCSV" class="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-5 py-2.5 rounded-xl text-sm shadow-md flex items-center justify-center gap-2 transition-all active:scale-95 cursor-pointer">
+          <button id="btnUnduhCSV" disabled class="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-5 py-2.5 rounded-xl text-sm shadow-md flex items-center justify-center gap-2 transition-all active:scale-95 cursor-pointer disabled:bg-slate-300 disabled:text-slate-500 disabled:shadow-none disabled:cursor-not-allowed">
             📥 Unduh Laporan (.CSV)
           </button>
         </div>
@@ -248,6 +248,8 @@
       const modalSubtitle = document.getElementById('modalSubtitle');
       const modalTableHead = document.getElementById('modalTableHead');
       const modalTableBody = document.getElementById('modalTableBody');
+      const btnUnduhCSV = document.getElementById('btnUnduhCSV');
+      let laporanBulananAktif = null;
 
       function getApiUrl() {
         if (typeof API_URL !== 'undefined' && API_URL) return API_URL;
@@ -409,6 +411,8 @@
       document.getElementById('btnRekapBulanan').addEventListener('click', function () {
         areaBuatRekap.classList.remove('hidden');
         bulanRekap.value = String(new Date().getMonth());
+        laporanBulananAktif = null;
+        btnUnduhCSV.disabled = true;
         pesanBuatRekap.className = 'hidden mt-2 text-sm font-semibold rounded-xl px-3 py-2';
         window.setTimeout(sembunyikanKontrolBulananLama, 0);
         window.setTimeout(sembunyikanKontrolBulananLama, 150);
@@ -416,6 +420,8 @@
 
       document.getElementById('btnRekapTahunan').addEventListener('click', function () {
         areaBuatRekap.classList.add('hidden');
+        laporanBulananAktif = null;
+        btnUnduhCSV.disabled = false;
       });
 
       document.getElementById('btnTutupModal').addEventListener('click', function () {
@@ -483,6 +489,42 @@
         }
       }
 
+      function escapeCsv(nilai) {
+        const teks = String(nilai === undefined || nilai === null ? '' : nilai);
+        return '"' + teks.replace(/"/g, '""') + '"';
+      }
+
+      function unduhLaporanBulanan() {
+        if (!laporanBulananAktif || !Array.isArray(laporanBulananAktif.rows)) {
+          tampilkanPesanRekap('Pilih bulan lalu klik Lihat Laporan sebelum mengunduh.', false);
+          return;
+        }
+
+        const rows = laporanBulananAktif.rows
+          .map(function (row) { return row.slice(0, 35); })
+          .filter(function (row, index) {
+            return index < 2 || row.some(function (nilai) { return String(nilai || '').trim() !== ''; });
+          });
+
+        const csv = '\uFEFF' + rows.map(function (row) {
+          return row.map(escapeCsv).join(';');
+        }).join('\r\n');
+
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        const namaFile = ('Rekap Absensi ' + laporanBulananAktif.sheet_name + '.csv')
+          .replace(/[\\/:*?"<>|]+/g, '-')
+          .replace(/\s+/g, '_');
+        link.href = url;
+        link.download = namaFile;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        URL.revokeObjectURL(url);
+        tampilkanPesanRekap('Laporan ' + laporanBulananAktif.sheet_name + ' berhasil diunduh.', true);
+      }
+
       btnLihatRekap.addEventListener('click', async function () {
         const apiUrl = getApiUrl();
         if (!apiUrl) {
@@ -491,6 +533,8 @@
         }
 
         btnLihatRekap.disabled = true;
+        laporanBulananAktif = null;
+        btnUnduhCSV.disabled = true;
         btnLihatRekap.textContent = 'Memuat...';
         modalTableHead.innerHTML = '';
         modalTableBody.innerHTML = '<tr><td colspan="35" class="py-8 text-center text-slate-400">Memuat sheet rekap...</td></tr>';
@@ -511,6 +555,8 @@
           }
 
           tampilkanIsiSheetRekap(result);
+          laporanBulananAktif = result;
+          btnUnduhCSV.disabled = false;
           tampilkanPesanRekap('Laporan dari sheet ' + result.sheet_name + ' berhasil ditampilkan.', true, result.sheet_url || '');
         } catch (error) {
           modalTableBody.innerHTML = '<tr><td colspan="35" class="py-8 text-center text-rose-500">Sheet rekap tidak dapat ditampilkan.</td></tr>';
@@ -520,6 +566,19 @@
           btnLihatRekap.textContent = '👁️ Lihat Laporan';
         }
       });
+
+      bulanRekap.addEventListener('change', function () {
+        laporanBulananAktif = null;
+        btnUnduhCSV.disabled = true;
+        pesanBuatRekap.className = 'hidden mt-3 text-sm font-semibold rounded-xl px-3 py-2';
+      });
+
+      btnUnduhCSV.addEventListener('click', function (event) {
+        if (areaBuatRekap.classList.contains('hidden')) return;
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        unduhLaporanBulanan();
+      }, true);
 
       btnBuatRekap.addEventListener('click', async function () {
         const apiUrl = getApiUrl();
