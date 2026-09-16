@@ -413,6 +413,7 @@
         bulanRekap.value = String(new Date().getMonth());
         laporanBulananAktif = null;
         btnUnduhCSV.disabled = true;
+        btnUnduhCSV.textContent = '📥 Unduh Laporan (.XLSX)';
         pesanBuatRekap.className = 'hidden mt-2 text-sm font-semibold rounded-xl px-3 py-2';
         window.setTimeout(sembunyikanKontrolBulananLama, 0);
         window.setTimeout(sembunyikanKontrolBulananLama, 150);
@@ -422,6 +423,7 @@
         areaBuatRekap.classList.add('hidden');
         laporanBulananAktif = null;
         btnUnduhCSV.disabled = false;
+        btnUnduhCSV.textContent = '📥 Unduh Laporan (.CSV)';
       });
 
       document.getElementById('btnTutupModal').addEventListener('click', function () {
@@ -489,11 +491,6 @@
         }
       }
 
-      function escapeCsv(nilai) {
-        const teks = String(nilai === undefined || nilai === null ? '' : nilai);
-        return '"' + teks.replace(/"/g, '""') + '"';
-      }
-
       function unduhLaporanBulanan() {
         if (!laporanBulananAktif || !Array.isArray(laporanBulananAktif.rows)) {
           tampilkanPesanRekap('Pilih bulan lalu klik Lihat Laporan sebelum mengunduh.', false);
@@ -506,23 +503,28 @@
             return index < 2 || row.some(function (nilai) { return String(nilai || '').trim() !== ''; });
           });
 
-        const csv = '\uFEFF' + rows.map(function (row) {
-          return row.map(escapeCsv).join(';');
-        }).join('\r\n');
+        const worksheet = XLSX.utils.aoa_to_sheet(rows);
+        worksheet['!merges'] = [
+          XLSX.utils.decode_range('A1:A2'),
+          XLSX.utils.decode_range('B1:B2'),
+          XLSX.utils.decode_range('C1:AG1'),
+          XLSX.utils.decode_range('AH1:AI1')
+        ];
+        worksheet['!cols'] = [
+          { wch: 7 },
+          { wch: 32 }
+        ].concat(Array.from({ length: 31 }, function () { return { wch: 4 }; }))
+          .concat([{ wch: 8 }, { wch: 8 }]);
 
-        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        const namaFile = ('Rekap Absensi ' + laporanBulananAktif.sheet_name + '.csv')
+        const workbook = XLSX.utils.book_new();
+        const namaSheet = String(laporanBulananAktif.sheet_name || 'Rekap Bulanan').slice(0, 31);
+        XLSX.utils.book_append_sheet(workbook, worksheet, namaSheet);
+
+        const namaFile = ('Rekap Absensi ' + laporanBulananAktif.sheet_name + '.xlsx')
           .replace(/[\\/:*?"<>|]+/g, '-')
           .replace(/\s+/g, '_');
-        link.href = url;
-        link.download = namaFile;
-        document.body.appendChild(link);
-        link.click();
-        link.remove();
-        URL.revokeObjectURL(url);
-        tampilkanPesanRekap('Laporan ' + laporanBulananAktif.sheet_name + ' berhasil diunduh.', true);
+        XLSX.writeFile(workbook, namaFile, { compression: true });
+        tampilkanPesanRekap('Laporan ' + laporanBulananAktif.sheet_name + ' berhasil diunduh dalam format XLSX.', true);
       }
 
       btnLihatRekap.addEventListener('click', async function () {
