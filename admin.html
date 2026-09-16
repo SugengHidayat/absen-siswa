@@ -186,11 +186,39 @@
         </div>
       </div>
 
-      <div class="p-4 border-t border-slate-100 bg-slate-50 flex flex-col sm:flex-row gap-3 justify-between items-center">
-        <p class="text-xs text-slate-400 italic text-center sm:text-left">*Data dihitung bersumber langsung dari rekam data lembar log repositori.</p>
-        <button id="btnUnduhCSV" class="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-5 py-2.5 rounded-xl text-sm shadow-md flex items-center justify-center gap-2 transition-all active:scale-95 cursor-pointer">
-          📥 Unduh Laporan (.CSV)
-        </button>
+      <div class="p-4 border-t border-slate-100 bg-slate-50 space-y-3">
+        <div id="areaBuatRekap" class="hidden bg-amber-50 border border-amber-200 rounded-2xl p-3">
+          <div class="flex flex-col sm:flex-row gap-3 items-end">
+            <div class="w-full sm:flex-1">
+              <label for="bulanRekap" class="block text-xs font-bold text-amber-800 mb-1">Pilih Bulan Rekap</label>
+              <select id="bulanRekap" class="w-full px-3 py-2.5 border border-amber-200 rounded-xl font-semibold bg-white focus:outline-none focus:border-amber-500">
+                <option value="0">Januari</option>
+                <option value="1">Februari</option>
+                <option value="2">Maret</option>
+                <option value="3">April</option>
+                <option value="4">Mei</option>
+                <option value="5">Juni</option>
+                <option value="6">Juli</option>
+                <option value="7">Agustus</option>
+                <option value="8">September</option>
+                <option value="9">Oktober</option>
+                <option value="10">November</option>
+                <option value="11">Desember</option>
+              </select>
+            </div>
+            <button id="btnBuatRekap" class="w-full sm:w-auto bg-amber-500 hover:bg-amber-600 text-white font-bold px-5 py-2.5 rounded-xl text-sm shadow-md transition-all active:scale-95 cursor-pointer disabled:bg-slate-300 disabled:cursor-not-allowed">
+              📄 Buat Rekap
+            </button>
+          </div>
+          <p id="pesanBuatRekap" class="hidden mt-2 text-sm font-semibold rounded-xl px-3 py-2" role="status" aria-live="polite"></p>
+        </div>
+
+        <div class="flex flex-col sm:flex-row gap-3 justify-between items-center">
+          <p class="text-xs text-slate-400 italic text-center sm:text-left">*Data dihitung bersumber langsung dari rekam data lembar log repositori.</p>
+          <button id="btnUnduhCSV" class="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-5 py-2.5 rounded-xl text-sm shadow-md flex items-center justify-center gap-2 transition-all active:scale-95 cursor-pointer">
+            📥 Unduh Laporan (.CSV)
+          </button>
+        </div>
       </div>
 
     </div>
@@ -208,6 +236,10 @@
       const pesan = document.getElementById('pesanAbsenAdmin');
       const labelTahun = document.getElementById('lblTahunAktif');
       const selectTahun = document.getElementById('selectTahun');
+      const areaBuatRekap = document.getElementById('areaBuatRekap');
+      const bulanRekap = document.getElementById('bulanRekap');
+      const btnBuatRekap = document.getElementById('btnBuatRekap');
+      const pesanBuatRekap = document.getElementById('pesanBuatRekap');
 
       function getApiUrl() {
         if (typeof API_URL !== 'undefined' && API_URL) return API_URL;
@@ -225,6 +257,23 @@
         pesan.textContent = teks;
         pesan.className = 'text-sm font-semibold rounded-xl px-3 py-2 ' +
           (berhasil ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700');
+      }
+
+      function tampilkanPesanRekap(teks, berhasil, url) {
+        pesanBuatRekap.textContent = '';
+        pesanBuatRekap.className = 'mt-2 text-sm font-semibold rounded-xl px-3 py-2 ' +
+          (berhasil ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700');
+        pesanBuatRekap.appendChild(document.createTextNode(teks));
+
+        if (berhasil && url) {
+          const tautan = document.createElement('a');
+          tautan.href = url;
+          tautan.target = '_blank';
+          tautan.rel = 'noopener noreferrer';
+          tautan.className = 'ml-2 underline font-black';
+          tautan.textContent = 'Buka sheet';
+          pesanBuatRekap.appendChild(tautan);
+        }
       }
 
       function tanggalHariIni() {
@@ -321,6 +370,54 @@
         } finally {
           btnSimpan.disabled = false;
           btnSimpan.textContent = 'Simpan Absensi';
+        }
+      });
+
+      document.getElementById('btnRekapBulanan').addEventListener('click', function () {
+        areaBuatRekap.classList.remove('hidden');
+        bulanRekap.value = String(new Date().getMonth());
+        pesanBuatRekap.className = 'hidden mt-2 text-sm font-semibold rounded-xl px-3 py-2';
+      });
+
+      document.getElementById('btnRekapTahunan').addEventListener('click', function () {
+        areaBuatRekap.classList.add('hidden');
+      });
+
+      document.getElementById('btnTutupModal').addEventListener('click', function () {
+        areaBuatRekap.classList.add('hidden');
+      });
+
+      btnBuatRekap.addEventListener('click', async function () {
+        const apiUrl = getApiUrl();
+        if (!apiUrl) {
+          tampilkanPesanRekap('URL API belum ditemukan. Periksa js/config.js.', false);
+          return;
+        }
+
+        btnBuatRekap.disabled = true;
+        btnBuatRekap.textContent = 'Membuat Rekap...';
+
+        try {
+          const response = await fetch(apiUrl, {
+            method: 'POST',
+            body: JSON.stringify({
+              action: 'createMonthlyRecap',
+              tahun_ajaran: tahunAktif(),
+              bulan: Number(bulanRekap.value)
+            })
+          });
+          const result = await response.json();
+
+          if (result.status !== 'success') {
+            throw new Error(result.message || 'Rekap bulanan gagal dibuat.');
+          }
+
+          tampilkanPesanRekap(result.message || 'Rekap bulanan berhasil dibuat.', true, result.sheet_url || '');
+        } catch (error) {
+          tampilkanPesanRekap(error.message || 'Terjadi kesalahan saat membuat rekap bulanan.', false);
+        } finally {
+          btnBuatRekap.disabled = false;
+          btnBuatRekap.textContent = '📄 Buat Rekap';
         }
       });
 
