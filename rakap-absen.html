@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Rekap Absensi Siswa - SDN Ranuklindungan I</title>
+  <style>
+    :root {
+      --blue: #0f5e9c;
+      --blue-dark: #0b3f6c;
+      --teal: #0f766e;
+      --ink: #14213d;
+      --muted: #64748b;
+      --line: #111827;
+      --surface: rgba(255, 255, 255, 0.94);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--ink);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background:
+        radial-gradient(circle at 10% 0%, rgba(125, 211, 252, 0.38), transparent 32%),
+        radial-gradient(circle at 90% 15%, rgba(110, 231, 183, 0.30), transparent 30%),
+        linear-gradient(145deg, #e7f6f5 0%, #eef8ff 48%, #f1f8f3 100%);
+    }
+
+    button, select { font: inherit; }
+
+    .page-shell {
+      width: min(1600px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 32px 0 48px;
+    }
+
+    .hero {
+      padding: 28px;
+      color: white;
+      border-radius: 26px;
+      background: linear-gradient(135deg, #0b4f7d, #0f766e);
+      box-shadow: 0 18px 45px rgba(15, 94, 156, 0.20);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 24px;
+    }
+
+    .brand { display: flex; align-items: center; gap: 16px; }
+    .brand-icon {
+      width: 58px; height: 58px; border-radius: 18px;
+      display: grid; place-items: center; font-size: 30px;
+      background: rgba(255,255,255,.18); border: 1px solid rgba(255,255,255,.3);
+    }
+    .hero h1 { margin: 0 0 5px; font-size: clamp(24px, 4vw, 36px); line-height: 1.1; }
+    .hero p { margin: 0; color: #dbeafe; font-weight: 600; }
+    .hero-badge {
+      padding: 10px 14px; border-radius: 999px; white-space: nowrap;
+      background: rgba(255,255,255,.16); border: 1px solid rgba(255,255,255,.26);
+      font-size: 13px; font-weight: 800;
+    }
+
+    .filter-card, .table-card, .summary-section {
+      margin-top: 22px;
+      background: var(--surface);
+      border: 1px solid rgba(148, 163, 184, 0.34);
+      border-radius: 24px;
+      box-shadow: 0 14px 40px rgba(15, 60, 85, 0.10);
+      backdrop-filter: blur(12px);
+    }
+
+    .filter-card { padding: 22px; }
+    .filter-grid {
+      display: grid;
+      grid-template-columns: minmax(190px, 1fr) minmax(150px, .65fr) auto;
+      gap: 16px;
+      align-items: end;
+    }
+
+    label {
+      display: block; margin-bottom: 7px; color: #334155;
+      font-size: 12px; font-weight: 900; letter-spacing: .08em; text-transform: uppercase;
+    }
+
+    select {
+      width: 100%; padding: 13px 14px; border: 2px solid #cbd5e1;
+      border-radius: 13px; background: white; color: #1e293b; font-weight: 750;
+      outline: none; transition: .2s ease;
+    }
+    select:focus { border-color: #0ea5e9; box-shadow: 0 0 0 4px rgba(14,165,233,.12); }
+
+    .primary-button {
+      min-height: 48px; padding: 0 24px; border: 0; border-radius: 13px;
+      color: white; background: linear-gradient(135deg, #0f6ea8, #0f766e);
+      font-weight: 900; cursor: pointer; box-shadow: 0 9px 20px rgba(15,118,110,.22);
+      transition: transform .18s ease, box-shadow .18s ease;
+    }
+    .primary-button:hover { transform: translateY(-1px); box-shadow: 0 12px 26px rgba(15,118,110,.26); }
+    .primary-button:disabled { opacity: .55; cursor: wait; transform: none; }
+
+    .legend { margin-top: 16px; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+    .legend-title { color: var(--muted); font-size: 13px; font-weight: 800; margin-right: 2px; }
+    .legend-item { padding: 7px 11px; border-radius: 10px; font-size: 12px; font-weight: 900; border: 1px solid; }
+    .legend-s { background: #fef3c7; color: #92400e; border-color: #f59e0b; }
+    .legend-i { background: #dcfce7; color: #166534; border-color: #22c55e; }
+    .legend-a { background: #fee2e2; color: #991b1b; border-color: #ef4444; }
+
+    .status-message { display: none; margin-top: 14px; padding: 12px 14px; border-radius: 12px; font-weight: 750; font-size: 14px; }
+    .status-message.show { display: block; }
+    .status-message.info { background: #e0f2fe; color: #075985; }
+    .status-message.error { background: #fee2e2; color: #991b1b; }
+
+    .table-card { overflow: hidden; }
+    .section-heading { padding: 20px 22px; display: flex; justify-content: space-between; align-items: center; gap: 16px; border-bottom: 1px solid #dbe4ee; }
+    .section-heading h2 { margin: 0; font-size: 20px; }
+    .section-heading p { margin: 4px 0 0; color: var(--muted); font-size: 13px; font-weight: 650; }
+    .academic-badge { padding: 9px 12px; border-radius: 11px; background: #e0f2fe; color: #075985; font-size: 12px; font-weight: 900; }
+
+    .table-wrap { overflow: auto; max-height: 66vh; background: white; }
+    table { width: max-content; min-width: 100%; border-collapse: collapse; font-size: 12px; }
+    th, td { border: 1px solid var(--line); padding: 8px 7px; text-align: center; min-width: 36px; }
+    thead th { position: sticky; top: 0; z-index: 5; background: var(--blue); color: white; font-weight: 900; }
+    th.col-no, td.col-no { min-width: 58px; }
+    th.col-name, td.col-name { min-width: 240px; text-align: left; }
+    tbody td.col-name { font-weight: 750; background: #f8fafc; }
+    tbody tr:nth-child(even) td:not(.status-s):not(.status-i):not(.status-a):not(.col-name) { background: #f8fbfd; }
+    tbody tr:hover td:not(.status-s):not(.status-i):not(.status-a) { background: #eaf6fb; }
+    .status-s { background: #facc15 !important; color: #713f12; font-weight: 1000; }
+    .status-i { background: #4ade80 !important; color: #14532d; font-weight: 1000; }
+    .status-a { background: #f87171 !important; color: #7f1d1d; font-weight: 1000; }
+    .total-cell { font-weight: 950; background: #eff6ff; }
+    .attendance-cell { min-width: 104px; font-weight: 950; color: #0f766e; background: #ecfdf5; }
+
+    .empty-state { padding: 48px 24px; text-align: center; color: #94a3b8; font-weight: 750; }
+
+    .summary-section { padding: 22px; display: none; }
+    .summary-section.show { display: block; }
+    .summary-section h2 { margin: 0 0 16px; font-size: 20px; }
+    .summary-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+    .summary-card { padding: 18px; border-radius: 17px; border: 1px solid; }
+    .summary-card span { display: block; font-size: 12px; font-weight: 900; text-transform: uppercase; letter-spacing: .06em; opacity: .78; }
+    .summary-card strong { display: block; margin-top: 7px; font-size: 28px; }
+    .sum-s { background: #fffbeb; color: #92400e; border-color: #fde68a; }
+    .sum-i { background: #f0fdf4; color: #166534; border-color: #bbf7d0; }
+    .sum-a { background: #fef2f2; color: #991b1b; border-color: #fecaca; }
+    .sum-present { background: #eff6ff; color: #1d4ed8; border-color: #bfdbfe; }
+    .calculation-note { margin: 14px 0 0; color: var(--muted); font-size: 12px; line-height: 1.6; }
+
+    @media (max-width: 760px) {
+      .page-shell { width: min(100% - 20px, 1600px); padding-top: 14px; }
+      .hero { padding: 22px; align-items: flex-start; }
+      .hero-badge { display: none; }
+      .filter-grid { grid-template-columns: 1fr; }
+      .primary-button { width: 100%; }
+      .summary-grid { grid-template-columns: 1fr 1fr; }
+      .section-heading { align-items: flex-start; flex-direction: column; }
+    }
+
+    @media (max-width: 440px) {
+      .summary-grid { grid-template-columns: 1fr; }
+      .brand-icon { width: 48px; height: 48px; border-radius: 14px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="page-shell">
+    <header class="hero">
+      <div class="brand">
+        <div class="brand-icon">📊</div>
+        <div>
+          <h1>Rekap Absensi Siswa</h1>
+          <p>SDN Ranuklindungan I · Kelas 4</p>
+        </div>
+      </div>
+      <div class="hero-badge">Laporan Bulanan Otomatis</div>
+    </header>
+
+    <section class="filter-card" aria-labelledby="filterTitle">
+      <div class="filter-grid">
+        <div>
+          <label id="filterTitle" for="pilihBulan">Bulan</label>
+          <select id="pilihBulan">
+            <option value="0">Januari</option><option value="1">Februari</option>
+            <option value="2">Maret</option><option value="3">April</option>
+            <option value="4">Mei</option><option value="5">Juni</option>
+            <option value="6">Juli</option><option value="7">Agustus</option>
+            <option value="8">September</option><option value="9">Oktober</option>
+            <option value="10">November</option><option value="11">Desember</option>
+          </select>
+        </div>
+        <div>
+          <label for="pilihTahun">Tahun</label>
+          <select id="pilihTahun"></select>
+        </div>
+        <button id="btnLihatAbsen" class="primary-button" type="button">Lihat Absen</button>
+      </div>
+      <div class="legend" aria-label="Keterangan status absensi">
+        <span class="legend-title">Keterangan:</span>
+        <span class="legend-item legend-s">S = Sakit</span>
+        <span class="legend-item legend-i">I = Izin</span>
+        <span class="legend-item legend-a">A = Alfa</span>
+      </div>
+      <div id="statusMessage" class="status-message" role="status" aria-live="polite"></div>
+    </section>
+
+    <section class="table-card" aria-labelledby="tableTitle">
+      <div class="section-heading">
+        <div>
+          <h2 id="tableTitle">Tabel Absensi Bulanan</h2>
+          <p id="periodeLabel">Pilih bulan dan tahun untuk menampilkan laporan.</p>
+        </div>
+        <span id="tahunAjaranBadge" class="academic-badge">Tahun Ajaran —</span>
+      </div>
+      <div class="table-wrap">
+        <div id="emptyState" class="empty-state">Belum ada laporan yang ditampilkan.</div>
+        <table id="tabelAbsensi" hidden>
+          <thead id="tableHead"></thead>
+          <tbody id="tableBody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="summarySection" class="summary-section" aria-labelledby="summaryTitle">
+      <h2 id="summaryTitle">Ringkasan Absensi Keseluruhan</h2>
+      <div class="summary-grid">
+        <article class="summary-card sum-s"><span>Total Sakit</span><strong id="totalSakit">0</strong></article>
+        <article class="summary-card sum-i"><span>Total Izin</span><strong id="totalIzin">0</strong></article>
+        <article class="summary-card sum-a"><span>Total Alfa</span><strong id="totalAlfa">0</strong></article>
+        <article class="summary-card sum-present"><span>Persentase Kehadiran</span><strong id="persenHadir">0%</strong></article>
+      </div>
+      <p id="calculationNote" class="calculation-note"></p>
+    </section>
+  </main>
+
+  <script>
+    (function () {
+      const API_URL = 'https://script.google.com/macros/s/AKfycbyYYcK4JgzB7fhwqxyW2a1FkMdhE8726iqCeHsxxSJcWyulN5E8gZo59YQGuut-jX6gIA/exec';
+      const namaBulan = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+      const pilihBulan = document.getElementById('pilihBulan');
+      const pilihTahun = document.getElementById('pilihTahun');
+      const btnLihat = document.getElementById('btnLihatAbsen');
+      const statusMessage = document.getElementById('statusMessage');
+      const tabel = document.getElementById('tabelAbsensi');
+      const tableHead = document.getElementById('tableHead');
+      const tableBody = document.getElementById('tableBody');
+      const emptyState = document.getElementById('emptyState');
+      const summarySection = document.getElementById('summarySection');
+
+      function isiPilihanTahun() {
+        const tahunSekarang = new Date().getFullYear();
+        for (let tahun = tahunSekarang - 3; tahun <= tahunSekarang + 2; tahun++) {
+          const option = document.createElement('option');
+          option.value = String(tahun);
+          option.textContent = String(tahun);
+          if (tahun === tahunSekarang) option.selected = true;
+          pilihTahun.appendChild(option);
+        }
+        pilihBulan.value = String(new Date().getMonth());
+      }
+
+      function tampilkanStatus(teks, tipe) {
+        statusMessage.textContent = teks;
+        statusMessage.className = 'status-message show ' + tipe;
+      }
+
+      function hapusStatus() {
+        statusMessage.textContent = '';
+        statusMessage.className = 'status-message';
+      }
+
+      function buatHeader(jumlahHari) {
+        tableHead.innerHTML = '';
+        const row = document.createElement('tr');
+        const headers = ['No', 'Nama Murid'];
+        for (let hari = 1; hari <= jumlahHari; hari++) headers.push(String(hari));
+        headers.push('S', 'I', 'A', 'Kehadiran');
+
+        headers.forEach(function (judul, index) {
+          const th = document.createElement('th');
+          th.textContent = judul;
+          if (index === 0) th.className = 'col-no';
+          if (index === 1) th.className = 'col-name';
+          row.appendChild(th);
+        });
+        tableHead.appendChild(row);
+      }
+
+      function statusClass(status) {
+        if (status === 'S') return 'status-s';
+        if (status === 'I') return 'status-i';
+        if (status === 'A') return 'status-a';
+        return '';
+      }
+
+      function tampilkanTabel(data) {
+        buatHeader(data.days_in_month);
+        tableBody.innerHTML = '';
+
+        data.students.forEach(function (murid, index) {
+          const tr = document.createElement('tr');
+          const no = document.createElement('td');
+          no.className = 'col-no';
+          no.textContent = murid.no_absen || index + 1;
+          tr.appendChild(no);
+
+          const nama = document.createElement('td');
+          nama.className = 'col-name';
+          nama.textContent = murid.nama;
+          tr.appendChild(nama);
+
+          murid.daily.forEach(function (status) {
+            const td = document.createElement('td');
+            td.textContent = status;
+            td.className = statusClass(status);
+            tr.appendChild(td);
+          });
+
+          [murid.total_s, murid.total_i, murid.total_a].forEach(function (total) {
+            const td = document.createElement('td');
+            td.className = 'total-cell';
+            td.textContent = total;
+            tr.appendChild(td);
+          });
+
+          const hadir = document.createElement('td');
+          hadir.className = 'attendance-cell';
+          hadir.textContent = murid.attendance_percentage.toFixed(1) + '%';
+          tr.appendChild(hadir);
+          tableBody.appendChild(tr);
+        });
+
+        emptyState.hidden = true;
+        tabel.hidden = false;
+      }
+
+      function tampilkanRingkasan(data) {
+        document.getElementById('totalSakit').textContent = data.summary.total_s;
+        document.getElementById('totalIzin').textContent = data.summary.total_i;
+        document.getElementById('totalAlfa').textContent = data.summary.total_a;
+        document.getElementById('persenHadir').textContent = data.summary.attendance_percentage.toFixed(1) + '%';
+        document.getElementById('calculationNote').textContent =
+          'Perhitungan menggunakan ' + data.summary.school_days + ' hari sekolah (Senin–Sabtu) dan ' +
+          data.summary.student_count + ' murid. Hari libur nasional belum dikurangi secara otomatis.';
+        summarySection.classList.add('show');
+      }
+
+      async function muatAbsensi() {
+        hapusStatus();
+        btnLihat.disabled = true;
+        btnLihat.textContent = 'Memuat Data...';
+        tabel.hidden = true;
+        summarySection.classList.remove('show');
+        emptyState.hidden = false;
+        emptyState.textContent = 'Sedang mengambil data absensi...';
+
+        try {
+          const response = await fetch(API_URL, {
+            method: 'POST',
+            body: JSON.stringify({
+              action: 'getAttendanceRecapByPeriod',
+              month: Number(pilihBulan.value),
+              year: Number(pilihTahun.value)
+            })
+          });
+          const result = await response.json();
+          if (result.status !== 'success') throw new Error(result.message || 'Data absensi gagal dimuat.');
+
+          tampilkanTabel(result);
+          tampilkanRingkasan(result);
+          document.getElementById('periodeLabel').textContent = namaBulan[result.month] + ' ' + result.year;
+          document.getElementById('tahunAjaranBadge').textContent = 'Tahun Ajaran ' + result.academic_year;
+        } catch (error) {
+          emptyState.hidden = false;
+          emptyState.textContent = 'Data belum dapat ditampilkan.';
+          tampilkanStatus(error.message || 'Terjadi kesalahan saat memuat data.', 'error');
+        } finally {
+          btnLihat.disabled = false;
+          btnLihat.textContent = 'Lihat Absen';
+        }
+      }
+
+      btnLihat.addEventListener('click', muatAbsensi);
+      isiPilihanTahun();
+    })();
+  </script>
+</body>
+</html>
