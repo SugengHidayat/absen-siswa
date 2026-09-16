@@ -85,6 +85,40 @@
           </div>
         </div>
 
+        <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 border-t-4 border-t-amber-500">
+          <h3 class="text-base font-bold text-slate-700 mb-1 flex items-center gap-2">📝 Isi Absen Siswa</h3>
+          <p class="text-xs text-slate-400 mb-4">Catat siswa yang Sakit, Izin, atau Alfa pada tanggal yang dipilih.</p>
+
+          <form id="formAbsenAdmin" class="space-y-3">
+            <div>
+              <label for="absenNamaMurid" class="block text-xs font-bold text-slate-600 mb-1">Nama Murid</label>
+              <select id="absenNamaMurid" required class="w-full px-3 py-2.5 border border-slate-200 rounded-xl font-semibold bg-slate-50 focus:outline-none focus:border-amber-500">
+                <option value="">Memuat daftar murid...</option>
+              </select>
+            </div>
+
+            <div>
+              <label for="absenTanggal" class="block text-xs font-bold text-slate-600 mb-1">Tanggal</label>
+              <input type="date" id="absenTanggal" required class="w-full px-3 py-2.5 border border-slate-200 rounded-xl font-semibold bg-slate-50 focus:outline-none focus:border-amber-500">
+            </div>
+
+            <div>
+              <label for="absenJenis" class="block text-xs font-bold text-slate-600 mb-1">Jenis Absen</label>
+              <select id="absenJenis" required class="w-full px-3 py-2.5 border border-slate-200 rounded-xl font-semibold bg-slate-50 focus:outline-none focus:border-amber-500">
+                <option value="">Pilih jenis absen</option>
+                <option value="Sakit">Sakit</option>
+                <option value="Izin">Izin</option>
+                <option value="Alfa">Alfa</option>
+              </select>
+            </div>
+
+            <button type="submit" id="btnSimpanAbsen" class="w-full py-2.5 bg-amber-500 text-white font-bold rounded-xl hover:bg-amber-600 active:scale-95 transition-all text-sm uppercase tracking-wider cursor-pointer disabled:bg-slate-300 disabled:cursor-not-allowed">
+              Simpan Absensi
+            </button>
+            <p id="pesanAbsenAdmin" class="hidden text-sm font-semibold rounded-xl px-3 py-2" role="status" aria-live="polite"></p>
+          </form>
+        </div>
+
         <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 border-t-4 border-t-purple-500">
           <h3 class="text-base font-bold text-slate-700 mb-1 flex items-center gap-2">📊 Rekap Absensi Murid</h3>
           <p class="text-xs text-slate-400 mb-4">Lihat, pantau, dan unduh laporan total ketidakhadiran (Sakit & Izin) siswa Kelas 4.</p>
@@ -164,5 +198,149 @@
 
   <script src="js/config.js"></script>
   <script src="js/admin.js"></script>
+  <script>
+    (function () {
+      const form = document.getElementById('formAbsenAdmin');
+      const selectMurid = document.getElementById('absenNamaMurid');
+      const inputTanggal = document.getElementById('absenTanggal');
+      const selectJenis = document.getElementById('absenJenis');
+      const btnSimpan = document.getElementById('btnSimpanAbsen');
+      const pesan = document.getElementById('pesanAbsenAdmin');
+      const labelTahun = document.getElementById('lblTahunAktif');
+      const selectTahun = document.getElementById('selectTahun');
+
+      function getApiUrl() {
+        if (typeof API_URL !== 'undefined' && API_URL) return API_URL;
+        if (typeof GAS_API_URL !== 'undefined' && GAS_API_URL) return GAS_API_URL;
+        if (typeof SCRIPT_URL !== 'undefined' && SCRIPT_URL) return SCRIPT_URL;
+        if (typeof WEB_APP_URL !== 'undefined' && WEB_APP_URL) return WEB_APP_URL;
+        return '';
+      }
+
+      function tahunAktif() {
+        return (labelTahun.textContent || selectTahun.value || '').trim();
+      }
+
+      function tampilkanPesan(teks, berhasil) {
+        pesan.textContent = teks;
+        pesan.className = 'text-sm font-semibold rounded-xl px-3 py-2 ' +
+          (berhasil ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700');
+      }
+
+      function tanggalHariIni() {
+        const sekarang = new Date();
+        const lokal = new Date(sekarang.getTime() - sekarang.getTimezoneOffset() * 60000);
+        inputTanggal.value = lokal.toISOString().slice(0, 10);
+      }
+
+      async function muatMuridAbsen() {
+        const apiUrl = getApiUrl();
+        const tahun = tahunAktif();
+        selectMurid.innerHTML = '<option value="">Memuat daftar murid...</option>';
+
+        if (!apiUrl) {
+          selectMurid.innerHTML = '<option value="">URL API belum ditemukan di config.js</option>';
+          return;
+        }
+
+        if (!tahun) {
+          selectMurid.innerHTML = '<option value="">Tahun ajaran belum dipilih</option>';
+          return;
+        }
+
+        try {
+          const response = await fetch(apiUrl, {
+            method: 'POST',
+            body: JSON.stringify({ action: 'getAllStudents', tahun_ajaran: tahun })
+          });
+          const result = await response.json();
+
+          if (result.status !== 'success') {
+            throw new Error(result.message || 'Daftar murid gagal dimuat.');
+          }
+
+          selectMurid.innerHTML = '<option value="">Pilih nama murid</option>';
+          result.students.forEach(function (murid) {
+            const option = document.createElement('option');
+            option.value = String(murid.no_absen);
+            option.textContent = murid.no_absen + '. ' + murid.nama;
+            option.dataset.nama = murid.nama;
+            selectMurid.appendChild(option);
+          });
+
+          if (!result.students.length) {
+            selectMurid.innerHTML = '<option value="">Belum ada murid pada tahun ajaran ini</option>';
+          }
+        } catch (error) {
+          selectMurid.innerHTML = '<option value="">Gagal memuat daftar murid</option>';
+          tampilkanPesan(error.message || 'Gagal memuat daftar murid.', false);
+        }
+      }
+
+      form.addEventListener('submit', async function (event) {
+        event.preventDefault();
+        const optionTerpilih = selectMurid.options[selectMurid.selectedIndex];
+
+        if (!selectMurid.value || !inputTanggal.value || !selectJenis.value) {
+          tampilkanPesan('Lengkapi nama murid, tanggal, dan jenis absen.', false);
+          return;
+        }
+
+        const apiUrl = getApiUrl();
+        if (!apiUrl) {
+          tampilkanPesan('URL API belum ditemukan. Periksa js/config.js.', false);
+          return;
+        }
+
+        btnSimpan.disabled = true;
+        btnSimpan.textContent = 'Menyimpan...';
+
+        try {
+          const response = await fetch(apiUrl, {
+            method: 'POST',
+            body: JSON.stringify({
+              action: 'adminSubmitAbsence',
+              tahun_ajaran: tahunAktif(),
+              no_absen: selectMurid.value,
+              nama_murid: optionTerpilih.dataset.nama || optionTerpilih.textContent,
+              tanggal: inputTanggal.value,
+              status: selectJenis.value
+            })
+          });
+          const result = await response.json();
+
+          if (result.status !== 'success') {
+            throw new Error(result.message || 'Absensi gagal disimpan.');
+          }
+
+          tampilkanPesan(result.message || 'Absensi berhasil disimpan.', true);
+          selectMurid.value = '';
+          selectJenis.value = '';
+        } catch (error) {
+          tampilkanPesan(error.message || 'Terjadi kesalahan saat menyimpan absensi.', false);
+        } finally {
+          btnSimpan.disabled = false;
+          btnSimpan.textContent = 'Simpan Absensi';
+        }
+      });
+
+      selectTahun.addEventListener('change', muatMuridAbsen);
+      document.getElementById('btnRefresh').addEventListener('click', muatMuridAbsen);
+      document.getElementById('btnLogin').addEventListener('click', function () {
+        window.setTimeout(muatMuridAbsen, 800);
+      });
+      document.getElementById('btnAktifkanTahun').addEventListener('click', function () {
+        window.setTimeout(muatMuridAbsen, 800);
+      });
+
+      new MutationObserver(muatMuridAbsen).observe(labelTahun, {
+        childList: true,
+        characterData: true,
+        subtree: true
+      });
+
+      tanggalHariIni();
+    })();
+  </script>
 </body>
 </html>
